@@ -1,0 +1,152 @@
+#include <iostream>
+#include <queue>
+#include <stack>
+#include <omp.h>
+
+#define MAX_THREADS 4
+
+// Structure to represent a node in the tree
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int val) : data(val), left(NULL), right(NULL) {}
+};
+
+// Function for breadth-first search traversal
+void BFS(Node* root) {
+    if (root == NULL)
+        return;
+
+    std::queue<Node*> q;
+    q.push(root);
+
+    #pragma omp parallel num_threads(MAX_THREADS)
+    {
+        while (!q.empty()) {
+            #pragma omp for
+            for (int i = 0; i < q.size(); i++) {
+                Node* current = q.front();
+                q.pop();
+
+                std::cout << current->data << " ";
+
+                if (current->left != NULL)
+                    q.push(current->left);
+
+                if (current->right != NULL)
+                    q.push(current->right);
+            }
+        }
+    }
+
+    std::cout << std::endl;
+}
+
+// Function for depth-first search traversal (preorder)
+void DFS(Node* root) {
+    if (root == NULL)
+        return;
+
+    std::stack<Node*> stk;
+    stk.push(root);
+
+    #pragma omp parallel num_threads(MAX_THREADS)
+    {
+        while (!stk.empty()) {
+            #pragma omp for
+            for (int i = 0; i < stk.size(); i++) {
+                Node* current = stk.top();
+                stk.pop();
+
+                std::cout << current->data << " ";
+
+                if (current->right != NULL)
+                    stk.push(current->right);
+
+                if (current->left != NULL)
+                    stk.push(current->left);
+            }
+        }
+    }
+
+    std::cout << std::endl;
+}
+
+// Function to build the tree from user input
+Node* buildTree() {
+    int data;
+    std::cout << "Enter the data of the root node: ";
+    std::cin >> data;
+
+    Node* root = new Node(data);
+
+    std::queue<Node*> q;
+    q.push(root);
+
+    while (!q.empty()) {
+        Node* current = q.front();
+        q.pop();
+
+        int leftData, rightData;
+
+        std::cout << "Enter the left child data of " << current->data << " (Enter -1 if there is no left child): ";
+        std::cin >> leftData;
+
+        if (leftData != -1) {
+            current->left = new Node(leftData);
+            q.push(current->left);
+        }
+
+        std::cout << "Enter the right child data of " << current->data << " (Enter -1 if there is no right child): ";
+        std::cin >> rightData;
+
+        if (rightData != -1) {
+            current->right = new Node(rightData);
+            q.push(current->right);
+        }
+    }
+
+    return root;
+}
+
+int main() {
+    // Build the tree from user input
+    Node* root = buildTree();
+
+    int choice;
+    do {
+        std::cout << "Menu:\n";
+        std::cout << "1. Parallel BFS Traversal\n";
+        std::cout << "2. Parallel DFS Traversal\n";
+        std::cout << "3. Exit\n";
+        std::cout << "Enter your choice: ";
+        std::cin >> choice;
+
+        switch (choice) {
+            case 1:
+                std::cout << "Parallel BFS Traversal: ";
+                BFS(root);
+                break;
+            case 2:
+                std::cout << "Parallel DFS Traversal (preorder): ";
+                DFS(root);
+                break;
+            case 3:
+                std::cout << "Exiting...\n";
+                break;
+            default:
+                std::cout << "Invalid choice. Please try again.\n";
+                break;
+        }
+
+        std::cout << std::endl;
+
+    } while (choice != 3);
+
+    // Clean up the allocated memory
+    // ...
+
+    return 0;
+}
